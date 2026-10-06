@@ -35,7 +35,7 @@ export async function GET_DATA(inputData, env) {
   const libraryTest = {
     addResult: addNumbers(10, 20),
     helloResult: sayHello("Honey"),
-    multiplyResult: multiplyNumbers(5, 4),
+    multiplyResult: multiplyNumbers(5, 5),
   };
 
   return {
