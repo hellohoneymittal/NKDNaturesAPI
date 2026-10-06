@@ -3,15 +3,15 @@ export const SPREADSHEET_ID = "12RLRK6PjQVeysGskGu6Zanpx6AFU7QwMbU__Ec8JjWI";
 
 // Google Authentication
 export async function getGoogleAccessToken(env) {
-  const clientEmail = env.GOOGLE_CLIENT_EMAIL;
-  const privateKey = env.GOOGLE_PRIVATE_KEY;
+  const clientEmail = env.NATURES_EMAIL;
+  const privateKey = env.NATURES_PRIVATE_KEY;
 
   if (!clientEmail) {
-    throw new Error("GOOGLE_CLIENT_EMAIL is missing");
+    throw new Error("NATURES_EMAIL is missing");
   }
 
   if (!privateKey) {
-    throw new Error("GOOGLE_PRIVATE_KEY is missing");
+    throw new Error("NATURES_PRIVATE_KEY is missing");
   }
 
   const formattedPrivateKey = privateKey
@@ -93,7 +93,7 @@ async function importPrivateKey(pem) {
     .replace(/\s/g, "");
 
   if (!pemContents) {
-    throw new Error("GOOGLE_PRIVATE_KEY is empty after formatting");
+    throw new Error("NATURES_PRIVATE_KEY is empty after formatting");
   }
 
   let binaryDerString;
@@ -102,7 +102,7 @@ async function importPrivateKey(pem) {
     binaryDerString = atob(pemContents);
   } catch (error) {
     throw new Error(
-      "GOOGLE_PRIVATE_KEY is not a valid Base64 PKCS8 private key",
+      "NATURES_PRIVATE_KEY is not a valid Base64 PKCS8 private key",
     );
   }
 
@@ -149,12 +149,12 @@ function base64UrlEncodeBytes(bytes) {
 // Test Google Private Key
 
 export async function TEST_KEY(env) {
-  const privateKey = env.GOOGLE_PRIVATE_KEY;
+  const privateKey = env.NATURES_PRIVATE_KEY;
 
   if (!privateKey) {
     return {
       status: false,
-      message: "GOOGLE_PRIVATE_KEY is missing",
+      message: "NATURES_PRIVATE_KEY is missing",
     };
   }
 
