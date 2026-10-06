@@ -971,14 +971,25 @@ async function updateActivityMaster(env) {
   const colorUpdates = [];
   const errors = [];
   let processed = 0;
+  let skippedBlue = 0;
+  let skippedRed = 0;
+  let skippedNonProduction = 0;
+  const transactionTypeCounts = {};
 
   for (let index = 1; index < activity.length; index++) {
     const rowNumber = index + 1;
+    const row = activity[index];
+    const transactionType = String(row[5] ?? "").trim();
+    transactionTypeCounts[transactionType || "[blank]"] =
+      (transactionTypeCounts[transactionType || "[blank]"] || 0) + 1;
+
     const color = fontColorAt(activityMetadata, index);
     if (color === "#0000ff") {
+      skippedBlue++;
       continue;
     }
     if (color === "#ff0000") {
+      skippedRed++;
       errors.push({
         rowNumber,
         message:
@@ -986,12 +997,15 @@ async function updateActivityMaster(env) {
       });
       continue;
     }
-    const row = activity[index];
-    const [, rawItem, batch, rawQuantity, , rawTransactionType, rawLocation, category] = row;
-    const item = String(rawItem ?? "").trim();
-    const transactionType = String(rawTransactionType ?? "").trim();
-    const location = String(rawLocation ?? "").trim();
-    if (transactionType !== "Production") continue;
+    const item = String(row[1] ?? "").trim();
+    const batch = row[2];
+    const rawQuantity = row[3];
+    const location = String(row[6] ?? "").trim();
+    const category = row[7] ?? "";
+    if (transactionType !== "Production") {
+      skippedNonProduction++;
+      continue;
+    }
     try {
       const locationIndex = stockHeaders.indexOf(location);
       const batchIndex = stockHeaders.indexOf("Batch/Date of Manufacture");
@@ -1046,7 +1060,14 @@ async function updateActivityMaster(env) {
     colorUpdates,
     activityMetadata,
   );
-  return { processed, errors };
+  return {
+    processed,
+    skippedBlue,
+    skippedRed,
+    skippedNonProduction,
+    transactionTypeCounts,
+    errors,
+  };
 }
 
 function getFixedDependencyMap() {
@@ -1088,12 +1109,18 @@ async function updateStockViaSaleNew(env) {
   const colorUpdates = [];
   const errors = [];
   let processed = 0;
+  let skippedBlue = 0;
+  let skippedRed = 0;
 
   for (let index = 1; index < sales.length; index++) {
     const rowNumber = index + 1;
     const fontColor = fontColorAt(salesMetadata, index);
-    if (fontColor === "#0000ff") continue;
+    if (fontColor === "#0000ff") {
+      skippedBlue++;
+      continue;
+    }
     if (fontColor === "#ff0000") {
+      skippedRed++;
       errors.push({
         rowNumber,
         message:
@@ -1182,7 +1209,7 @@ async function updateStockViaSaleNew(env) {
     salesMetadata,
   );
 
-  return { processed, errors };
+  return { processed, skippedBlue, skippedRed, errors };
 }
 
 async function updateStock(env) {
@@ -1202,7 +1229,13 @@ async function updateStock(env) {
   return {
     status: errors.length === 0,
     activityRowsProcessed: activityResult.processed,
+    activityRowsSkippedBlue: activityResult.skippedBlue,
+    activityRowsSkippedRed: activityResult.skippedRed,
+    activityRowsSkippedNonProduction: activityResult.skippedNonProduction,
+    activityTransactionTypeCounts: activityResult.transactionTypeCounts,
     saleRowsProcessed: saleResult.processed,
+    saleRowsSkippedBlue: saleResult.skippedBlue,
+    saleRowsSkippedRed: saleResult.skippedRed,
     errors,
   };
 }
