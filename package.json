@@ -1,5 +1,5 @@
 {
-  "name": "my-testing-api",
+  "name": "my-nature-api",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -14,5 +14,8 @@
   "type": "commonjs",
   "devDependencies": {
     "wrangler": "^4.147.0"
+  },
+  "dependencies": {
+    "nkd-common-dev-lib": "github:hellohoneymittal/NKDCommonDevLib"
   }
 }

@@ -1,4 +1,5 @@
 import { SPREADSHEET_ID, getGoogleAccessToken } from "../utils/googleConfig.js";
+import { addNumbers, sayHello, multiplyNumbers } from "nkd-common-dev-lib";
 
 // GET DATA
 
@@ -31,10 +32,21 @@ export async function GET_DATA(inputData, env) {
     throw new Error(data.error?.message || "Unable to read Google Sheet");
   }
 
+  const libraryTest = {
+    addResult: addNumbers(10, 20),
+    helloResult: sayHello("Honey"),
+    multiplyResult: multiplyNumbers(5, 4),
+  };
+
   return {
     status: true,
     message: "GET_DATA successful",
+
+    // Existing Google Sheet data
     data: data.values || [],
+
+    // Common Library Test
+    libraryTest: libraryTest,
   };
 }
 
