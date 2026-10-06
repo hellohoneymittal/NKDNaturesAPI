@@ -969,13 +969,28 @@ async function updateActivityMaster(env) {
   const stockHeaders = stock[0] || [];
   const stockRows = stock.slice(1).map((row) => [...row]);
   const colorUpdates = [];
+  const errors = [];
+  let processed = 0;
 
   for (let index = 1; index < activity.length; index++) {
-    if (["#0000ff", "#ff0000"].includes(fontColorAt(activityMetadata, index))) {
+    const rowNumber = index + 1;
+    const color = fontColorAt(activityMetadata, index);
+    if (color === "#0000ff") {
+      continue;
+    }
+    if (color === "#ff0000") {
+      errors.push({
+        rowNumber,
+        message:
+          "This row was previously marked as failed; correct it and clear its red font to retry",
+      });
       continue;
     }
     const row = activity[index];
-    const [inputDate, item, batch, rawQuantity, , transactionType, location, category] = row;
+    const [, rawItem, batch, rawQuantity, , rawTransactionType, rawLocation, category] = row;
+    const item = String(rawItem ?? "").trim();
+    const transactionType = String(rawTransactionType ?? "").trim();
+    const location = String(rawLocation ?? "").trim();
     if (transactionType !== "Production") continue;
     try {
       const locationIndex = stockHeaders.indexOf(location);
@@ -990,7 +1005,7 @@ async function updateActivityMaster(env) {
       for (let stockIndex = 0; stockIndex < stockRows.length; stockIndex++) {
         const stockRow = stockRows[stockIndex];
         if (
-          stockRow[itemIndex] === item &&
+          String(stockRow[itemIndex] ?? "").trim() === item &&
           formattedDate(stockRow[batchIndex]) === batchDate
         ) {
           stockRow[locationIndex] = (Number(stockRow[locationIndex]) || 0) + quantity;
@@ -1009,10 +1024,15 @@ async function updateActivityMaster(env) {
         newRow[4] = category ?? "";
         stockRows.push(newRow);
       }
-      colorUpdates.push({ rowNumber: index + 1, color: "blue" });
+      colorUpdates.push({ rowNumber, color: "blue" });
+      processed++;
     } catch (error) {
-      console.error(`Failed to process Activity Master row ${index + 1}:`, error);
-      colorUpdates.push({ rowNumber: index + 1, color: "red" });
+      console.error(`Failed to process Activity Master row ${rowNumber}:`, error);
+      errors.push({
+        rowNumber,
+        message: error?.message || "Failed to update stock from production row",
+      });
+      colorUpdates.push({ rowNumber, color: "red" });
     }
   }
 
@@ -1026,7 +1046,7 @@ async function updateActivityMaster(env) {
     colorUpdates,
     activityMetadata,
   );
-  return null;
+  return { processed, errors };
 }
 
 function getFixedDependencyMap() {
@@ -1066,17 +1086,27 @@ async function updateStockViaSaleNew(env) {
   const stockRows = stock.slice(1).map((row) => [...row]);
   const dependencyMap = getFixedDependencyMap();
   const colorUpdates = [];
+  const errors = [];
+  let processed = 0;
 
   for (let index = 1; index < sales.length; index++) {
     const rowNumber = index + 1;
     const fontColor = fontColorAt(salesMetadata, index);
-    if (fontColor === "#0000ff" || fontColor === "#ff0000") continue;
+    if (fontColor === "#0000ff") continue;
+    if (fontColor === "#ff0000") {
+      errors.push({
+        rowNumber,
+        message:
+          "This row was previously marked as failed; correct it and clear its red font to retry",
+      });
+      continue;
+    }
 
     const sale = sales[index];
     const item = String(sale[2] ?? "").trim();
     const batch = sale[3];
     const quantity = Number(sale[4]) || 0;
-    const location = String(sale[10] ?? "");
+    const location = String(sale[10] ?? "").trim();
     const category = sale[13] ?? "";
 
     try {
@@ -1130,8 +1160,13 @@ async function updateStockViaSaleNew(env) {
       }
 
       colorUpdates.push({ rowNumber, color: "blue" });
+      processed++;
     } catch (error) {
       console.error(`Failed to process Sale Master row ${rowNumber}:`, error);
+      errors.push({
+        rowNumber,
+        message: error?.message || "Failed to update stock from sale row",
+      });
       colorUpdates.push({ rowNumber, color: "red" });
     }
   }
@@ -1147,13 +1182,29 @@ async function updateStockViaSaleNew(env) {
     salesMetadata,
   );
 
-  return true;
+  return { processed, errors };
 }
 
 async function updateStock(env) {
-  await updateActivityMaster(env);
-  await updateStockViaSaleNew(env);
-  return true;
+  const activityResult = await updateActivityMaster(env);
+  const saleResult = await updateStockViaSaleNew(env);
+  const errors = [
+    ...activityResult.errors.map((error) => ({
+      source: "Activity Master",
+      ...error,
+    })),
+    ...saleResult.errors.map((error) => ({
+      source: "Sale Master",
+      ...error,
+    })),
+  ];
+
+  return {
+    status: errors.length === 0,
+    activityRowsProcessed: activityResult.processed,
+    saleRowsProcessed: saleResult.processed,
+    errors,
+  };
 }
 
 export const LEGACY_IMPLEMENTATIONS = {
