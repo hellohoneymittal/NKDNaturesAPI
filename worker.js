@@ -131,8 +131,13 @@ export default {
           break;
       }
 
+      response = {
+        ...response,
+        status: response?.status === false ? false : true,
+      };
+
       return new Response(JSON.stringify(response), {
-        status: response.status === false ? 400 : 200,
+        status: 200,
         headers: {
           ...corsHeaders,
           "Content-Type": "application/json",
@@ -147,7 +152,7 @@ export default {
           message: error?.message || "Internal server error",
         }),
         {
-          status: 500,
+          status: 200,
           headers: {
             ...corsHeaders,
             "Content-Type": "application/json",

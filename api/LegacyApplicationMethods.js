@@ -199,7 +199,11 @@ function formattedDate(value) {
 }
 
 function responseSuccess(requestData, data) {
-  return { status: true, data, request: redactPasswords(requestData) };
+  return {
+    status: data === false || data?.status === false ? false : true,
+    data,
+    request: redactPasswords(requestData),
+  };
 }
 
 function redactPasswords(value) {
