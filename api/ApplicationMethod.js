@@ -1,4 +1,8 @@
-import { SPREADSHEET_ID, getGoogleAccessToken } from "../utils/googleConfig.js";
+import {
+  SPREADSHEET_ID,
+  USER_MASTER_SPREADSHEET_ID,
+  getGoogleAccessToken,
+} from "../utils/googleConfig.js";
 import { addNumbers, sayHello, multiplyNumbers } from "nkd-common-dev-lib";
 
 // GET DATA
@@ -299,4 +303,83 @@ export async function SEARCH_VOUCHER(inputData, env) {
       error: error.message,
     };
   }
+}
+
+export async function GET_ALL_USER_LIST_NEW(inputData, env) {
+  const password = String(inputData?.password ?? "")
+    .trim()
+    .toLowerCase();
+  const accessToken = await getGoogleAccessToken(env);
+  const ranges = ["'NKD Master'!A2:M", "'Other User Master'!A2:N"];
+
+  const sheetValues = await Promise.all(
+    ranges.map(async (range) => {
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${USER_MASTER_SPREADSHEET_ID}/values/${encodeURIComponent(range)}?valueRenderOption=FORMATTED_VALUE`;
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error("GET_ALL_USER_LIST_NEW Google Error:", data);
+        throw new Error(
+          data.error?.message || "Unable to read user master sheets",
+        );
+      }
+
+      return data.values || [];
+    }),
+  );
+
+  const [masterInput, otherInput] = sheetValues;
+  const response = {
+    data: [],
+    isAdminAccess: false,
+    role: "",
+    name: "",
+  };
+
+  for (const row of masterInput) {
+    if (!String(row[0] ?? "").trim()) break;
+
+    if (row[3] === "Active") {
+      const rowPassword = String(row[7] ?? "").trim().toLowerCase();
+
+      if (password && rowPassword === password) {
+        response.role = row[10] ?? "";
+        response.name = row[6] ?? "";
+
+        if (response.role === "Admin" || response.role === "Super Admin") {
+          response.isAdminAccess = true;
+        }
+      }
+
+      response.data.push({
+        name: row[6] ?? "",
+        mobile: row[9] ?? "",
+        schemeDiscount: row[12] ?? "",
+        devType: "NKDDevotee",
+      });
+    }
+  }
+
+  for (const row of otherInput) {
+    if (!String(row[1] ?? "").trim()) break;
+
+    response.data.push({
+      name: row[1] ?? "",
+      mobile: row[10] ?? "",
+      devType: "Non-NKDDevotee",
+      schemeDiscount: row[13] ?? "",
+    });
+  }
+
+  response.data.sort((a, b) =>
+    String(a.name).localeCompare(String(b.name)),
+  );
+
+  return response;
 }

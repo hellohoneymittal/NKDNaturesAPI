@@ -1,5 +1,7 @@
 // Google Sheet Configuration
 export const SPREADSHEET_ID = "12RLRK6PjQVeysGskGu6Zanpx6AFU7QwMbU__Ec8JjWI";
+export const USER_MASTER_SPREADSHEET_ID =
+  "1Lgl9QLwqmaCIAyOJAJ_StUH_H0BHIf0jNgaGFcFgpzo";
 
 async function readSecret(env, name) {
   const value = env[name];

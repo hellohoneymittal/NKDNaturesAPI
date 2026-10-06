@@ -1,5 +1,6 @@
 import { TEST_KEY } from "./utils/googleConfig.js";
 import {
+  GET_ALL_USER_LIST_NEW,
   GET_DATA,
   SAVE_DATA,
   DELETE_DATA,
@@ -70,6 +71,10 @@ export default {
       // API routing
 
       switch (apiType) {
+        case "GET_ALL_USER_LIST_NEW":
+          response = await GET_ALL_USER_LIST_NEW(inputData, env);
+          break;
+
         case "TEST_KEY":
           response = await TEST_KEY(env);
           break;
