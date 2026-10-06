@@ -1,10 +1,36 @@
 // Google Sheet Configuration
 export const SPREADSHEET_ID = "12RLRK6PjQVeysGskGu6Zanpx6AFU7QwMbU__Ec8JjWI";
 
+async function readSecret(env, name) {
+  const value = env[name];
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  const binding = env[`${name}_STORE`] || value;
+
+  if (binding && typeof binding.get === "function") {
+    const value = await binding.get();
+
+    if (typeof value === "string") {
+      return value;
+    }
+  }
+
+  if (binding == null) {
+    return undefined;
+  }
+
+  throw new Error(`${name} must be a string or a readable Secrets Store binding`);
+}
+
 // Google Authentication
 export async function getGoogleAccessToken(env) {
-  const clientEmail = env.NATURES_EMAIL;
-  const privateKey = env.NATURES_PRIVATE_KEY;
+  const [clientEmail, privateKey] = await Promise.all([
+    readSecret(env, "NATURES_EMAIL"),
+    readSecret(env, "NATURES_PRIVATE_KEY"),
+  ]);
 
   if (!clientEmail) {
     throw new Error("NATURES_EMAIL is missing");
@@ -149,7 +175,16 @@ function base64UrlEncodeBytes(bytes) {
 // Test Google Private Key
 
 export async function TEST_KEY(env) {
-  const privateKey = env.NATURES_PRIVATE_KEY;
+  const binding = env.NATURES_PRIVATE_KEY;
+
+  if (!binding) {
+    return {
+      status: false,
+      message: "NATURES_PRIVATE_KEY is missing",
+    };
+  }
+
+  const privateKey = await readSecret(env, "NATURES_PRIVATE_KEY");
 
   if (!privateKey) {
     return {

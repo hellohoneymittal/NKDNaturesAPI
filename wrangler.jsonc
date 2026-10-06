@@ -4,12 +4,12 @@
   "compatibility_date": "2026-10-06",
   "secrets_store_secrets": [
     {
-      "binding": "NATURES_EMAIL",
+      "binding": "NATURES_EMAIL_STORE",
       "store_id": "64da724ad0c54d46b8bcb0a0f3a2d4b3",
       "secret_name": "NATURES_EMAIL",
     },
     {
-      "binding": "NATURES_PRIVATE_KEY",
+      "binding": "NATURES_PRIVATE_KEY_STORE",
       "store_id": "64da724ad0c54d46b8bcb0a0f3a2d4b3",
       "secret_name": "NATURES_PRIVATE_KEY",
     },
