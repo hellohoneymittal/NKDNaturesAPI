@@ -1,3 +1,4 @@
+import { DurableObject } from "cloudflare:workers";
 import { TEST_KEY } from "./utils/googleConfig.js";
 import {
   GET_ALL_USER_LIST_NEW,
@@ -88,6 +89,18 @@ export default {
           response = await GET_DATA(inputData, env);
           break;
 
+        case "UPDATE_STOCK": {
+          const lockId = env.STOCK_UPDATE_LOCK.idFromName("global-stock-update");
+          const lock = env.STOCK_UPDATE_LOCK.get(lockId);
+          const lockResponse = await lock.fetch("https://stock-update/execute", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(requestData),
+          });
+          response = await lockResponse.json();
+          break;
+        }
+
         case "SAVE_DATA":
           response = await SAVE_DATA(inputData, env);
           break;
@@ -115,7 +128,6 @@ export default {
         case "GET_USER_INFO_BY_PASSWORD":
         case "SAVE_USER_ORDER_DATA":
         case "GET_USER_ORDER_LIST":
-        case "UPDATE_STOCK":
         case "READY_USER_ORDER":
         case "CREATE_SALE_NKD":
         case "GENERATE_NATURES_GST_INVOICE":
@@ -162,3 +174,24 @@ export default {
     }
   },
 };
+
+export class StockUpdateCoordinator extends DurableObject {
+  constructor(ctx, env) {
+    super(ctx, env);
+    this.queue = Promise.resolve();
+  }
+
+  async fetch(request) {
+    const requestData = await request.json();
+    const run = this.queue.then(() =>
+      runLegacyApi("UPDATE_STOCK", requestData, this.env),
+    );
+    this.queue = run.then(
+      () => undefined,
+      () => undefined,
+    );
+
+    const result = await run;
+    return Response.json(result);
+  }
+}

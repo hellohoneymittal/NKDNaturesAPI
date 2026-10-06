@@ -2,6 +2,20 @@
   "name": "natures-api",
   "main": "worker.js",
   "compatibility_date": "2026-10-06",
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "STOCK_UPDATE_LOCK",
+        "class_name": "StockUpdateCoordinator",
+      },
+    ],
+  },
+  "migrations": [
+    {
+      "tag": "v1-stock-update-lock",
+      "new_sqlite_classes": ["StockUpdateCoordinator"],
+    },
+  ],
   "secrets_store_secrets": [
     {
       "binding": "NATURES_EMAIL_STORE",

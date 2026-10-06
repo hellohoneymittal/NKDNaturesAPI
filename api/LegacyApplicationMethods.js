@@ -1029,6 +1029,133 @@ async function updateActivityMaster(env) {
   return null;
 }
 
+function getFixedDependencyMap() {
+  return {
+    "Pizza Mini Pan": { "Pizza Base Mini": 1 },
+    "Cream Roll Choco": { "Cream roll waffer": 1 },
+    "Burger Veggie Cheese": { "Aloo Tikki": 1, "Bun Plain": 1 },
+    "Cream Roll Plain": { "Cream roll waffer": 1 },
+    "Grilled Sandwich": { "Bread Whole Wheat Slices": 2 },
+    "Chaumeen Full Plate": { "Nkd Noddles": 150 },
+    "Gol Gappe Pani": { "Gol Gappe": 5 },
+    "Icing cake": { "Icing cake Base": 1 },
+    "Bun Plain Row": { "Bun Plain": 1 },
+    "Gol Gappe Chaat": { "Gol Gappe": 5 },
+    "Chaumeen Half Plate": { "Nkd Noddles": 80 },
+    Pastry: { "Pastry Base": 1 },
+    "Pizza Bun": { "Bun Plain": 1 },
+    Tart: { "Tart biscuits": 1 },
+    "Samosa Row": { Samosa: 1 },
+    "Burger Veggie": { "Bun Plain": 1, "Aloo Tikki": 1 },
+    "Samosa Chaat": { Samosa: 1 },
+    "Bread Whole Wheat": { "Bread Whole Wheat Slices": 10 },
+  };
+}
+
+async function updateStockViaSaleNew(env) {
+  const [sales, stock, salesMetadata] = await Promise.all([
+    readValues(env, MAIN_SHEET_ID, "'Sale Master'!A:W"),
+    readValues(env, MAIN_SHEET_ID, "'Stock Master'!A:Z"),
+    getSheetMetadata(env, MAIN_SHEET_ID, "'Sale Master'!A:W"),
+  ]);
+  if (!sales.length || !stock.length) {
+    throw new Error("Sale Master or Stock Master is missing its header row");
+  }
+
+  const stockHeaders = stock[0];
+  const stockRows = stock.slice(1).map((row) => [...row]);
+  const dependencyMap = getFixedDependencyMap();
+  const colorUpdates = [];
+
+  for (let index = 1; index < sales.length; index++) {
+    const rowNumber = index + 1;
+    const fontColor = fontColorAt(salesMetadata, index);
+    if (fontColor === "#0000ff" || fontColor === "#ff0000") continue;
+
+    const sale = sales[index];
+    const item = String(sale[2] ?? "").trim();
+    const batch = sale[3];
+    const quantity = Number(sale[4]) || 0;
+    const location = String(sale[10] ?? "");
+    const category = sale[13] ?? "";
+
+    try {
+      if (!item || !batch || quantity === 0) {
+        throw new Error("Sale row is missing item, batch, or quantity");
+      }
+
+      if (dependencyMap[item]) {
+        for (const [dependentItem, multiplier] of Object.entries(
+          dependencyMap[item],
+        )) {
+          const requiredQuantity = multiplier * quantity;
+          const stockRow = stockRows.find(
+            (row) => row[1] === dependentItem && Number(row[3]) > 0,
+          );
+
+          if (stockRow) {
+            stockRow[3] = (Number(stockRow[3]) || 0) - requiredQuantity;
+            stockRow[0] = timestamp();
+            stockRow[4] = category;
+          } else {
+            const newRow = Array(stockHeaders.length).fill("");
+            newRow[0] = timestamp();
+            newRow[1] = dependentItem;
+            newRow[2] = formattedDate(new Date());
+            newRow[3] = -requiredQuantity;
+            newRow[4] = category;
+            stockRows.push(newRow);
+          }
+        }
+      } else {
+        const locationIndex = stockHeaders.indexOf(location);
+        if (locationIndex < 0) {
+          throw new Error(`Stock Master has no location column '${location}'`);
+        }
+
+        const batchDate = formattedDate(batch);
+        const stockRow = stockRows.find(
+          (row) =>
+            String(row[1] ?? "").trim() === item &&
+            formattedDate(row[2]) === batchDate,
+        );
+        if (!stockRow) {
+          throw new Error(`No stock row found for '${item}' on ${batchDate}`);
+        }
+
+        stockRow[locationIndex] =
+          (Number(stockRow[locationIndex]) || 0) - quantity;
+        stockRow[0] = timestamp();
+        stockRow[4] = category;
+      }
+
+      colorUpdates.push({ rowNumber, color: "blue" });
+    } catch (error) {
+      console.error(`Failed to process Sale Master row ${rowNumber}:`, error);
+      colorUpdates.push({ rowNumber, color: "red" });
+    }
+  }
+
+  if (stockRows.length) {
+    await updateValues(env, MAIN_SHEET_ID, "'Stock Master'!A2", stockRows);
+  }
+  await setFontColors(
+    env,
+    MAIN_SHEET_ID,
+    "Sale Master",
+    colorUpdates,
+    salesMetadata,
+  );
+
+  return true;
+}
+
+async function updateStock(env) {
+  await updateActivityMaster(env);
+  await updateStockViaSaleNew(env);
+  return true;
+}
+
 export const LEGACY_IMPLEMENTATIONS = {
   GET_STOCK: (_requestData, env) => getStock(env),
   GET_ALL_USER_LIST: (requestData, env) =>
@@ -1036,8 +1163,9 @@ export const LEGACY_IMPLEMENTATIONS = {
   GET_PRODUCT_LIST: (_requestData, env) => getProductList(env),
   SAVE_PRODUCTION_DATA: (requestData, env) =>
     saveProductionData(requestData, env),
-    CREATE_SALE: (requestData, env) => createSale(requestData, env),
-    UPDATE_ACTIVITY_MASTER: (_requestData, env) => updateActivityMaster(env),
+  CREATE_SALE: (requestData, env) => createSale(requestData, env),
+  UPDATE_ACTIVITY_MASTER: (_requestData, env) => updateActivityMaster(env),
+  UPDATE_STOCK: (_requestData, env) => updateStock(env),
   ADD_NEW_USER: (requestData, env) => addNewUser(requestData, env),
   ADD_LIB_USER: (requestData, env) => addLibraryUser(requestData, env),
   LIB_BOOK_LIST: (_requestData, env) => getLibraryBookList(env),
@@ -1060,8 +1188,6 @@ export const BLOCKED_LEGACY_APIS = {
     "the API handler calls updateStockViaSale(), which is absent from the supplied implementation; the available newer helper is called only inside the LockService-protected update flow",
   INSERT_DAILY_INPUT:
     "the Apps Script route sends an email reconciliation report, and no email integration is configured for the Worker",
-  UPDATE_STOCK:
-    "the Apps Script operation depends on a script lock and stock-dependency processing that are not available as a safe Worker operation",
   CREATE_SALE_NKD:
     "the Apps Script route invokes Drive-based invoice rendering and downstream integrations that are not available in the Worker",
   GENERATE_NATURES_GST_INVOICE:
