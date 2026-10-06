@@ -2,6 +2,10 @@
 export const SPREADSHEET_ID = "12RLRK6PjQVeysGskGu6Zanpx6AFU7QwMbU__Ec8JjWI";
 export const USER_MASTER_SPREADSHEET_ID =
   "1Lgl9QLwqmaCIAyOJAJ_StUH_H0BHIf0jNgaGFcFgpzo";
+export const APPS_SCRIPT_SPREADSHEET_ID =
+  "1jdrhL1fsLj-I1p1UtwkK4EfLh8QwszhFMe2uCu1qk7k";
+export const CREDIT_ACTIVITY_SPREADSHEET_ID =
+  "1gQ7VYdkUFbur38wCXqLcJBwSbOyVQu0apK7_QPg3M78";
 
 async function readSecret(env, name) {
   const value = env[name];

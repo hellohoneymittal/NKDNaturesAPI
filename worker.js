@@ -6,6 +6,7 @@ import {
   DELETE_DATA,
   SEARCH_VOUCHER,
 } from "./api/ApplicationMethod.js";
+import { runLegacyApi } from "./api/LegacyApplicationMethods.js";
 
 export default {
   async fetch(request, env, ctx) {
@@ -93,6 +94,32 @@ export default {
 
         case "DELETE_DATA":
           response = await DELETE_DATA(inputData, env);
+          break;
+
+        case "GET_STOCK":
+        case "GET_ALL_USER_LIST":
+        case "GET_PRODUCT_LIST":
+        case "SAVE_PRODUCTION_DATA":
+        case "CREATE_SALE":
+        case "UPDATE_STOCK_VIA_SALE":
+        case "UPDATE_ACTIVITY_MASTER":
+        case "INSERT_DAILY_INPUT":
+        case "ADD_NEW_USER":
+        case "ADD_LIB_USER":
+        case "LIB_BOOK_LIST":
+        case "LIB_USER_LIST":
+        case "LIB_ISSUE_BOOK":
+        case "GET_KHATA_BOOK_USER_LIST":
+        case "UPDATE_CUST_CREDIT_BALANCE":
+        case "GET_KHATA_BOOK_BY_USER_ID":
+        case "GET_USER_INFO_BY_PASSWORD":
+        case "SAVE_USER_ORDER_DATA":
+        case "GET_USER_ORDER_LIST":
+        case "UPDATE_STOCK":
+        case "READY_USER_ORDER":
+        case "CREATE_SALE_NKD":
+        case "GENERATE_NATURES_GST_INVOICE":
+          response = await runLegacyApi(apiType, requestData, env);
           break;
 
         default:
