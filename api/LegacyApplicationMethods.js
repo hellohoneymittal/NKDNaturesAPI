@@ -1028,7 +1028,7 @@ async function getUserInfoByPassword(requestData, env) {
   return response;
 }
 
-async function updateActivityMaster(env) {
+async function updateActivityMaster_github(env) {
   const [activity, stock, activityMetadata] = await Promise.all([
     readValues(env, MAIN_SHEET_ID, "'Activity Master'!A:Z"),
     readValues(env, MAIN_SHEET_ID, "'Stock Master'!A:Z"),
