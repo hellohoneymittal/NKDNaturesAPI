@@ -25,7 +25,8 @@ async function sheetsRequest(env, spreadsheetId, path, options = {}) {
 
   if (!response.ok) {
     throw new Error(
-      result.error?.message || `Google Sheets request failed (${response.status})`,
+      result.error?.message ||
+        `Google Sheets request failed (${response.status})`,
     );
   }
 
@@ -71,7 +72,8 @@ async function batchUpdate(env, spreadsheetId, requests) {
 
 async function getSheetMetadata(env, spreadsheetId, range) {
   const query = new URLSearchParams({
-    fields: "sheets(properties(sheetId,title),data(rowData(values(effectiveFormat(textFormat(foregroundColor))))))",
+    fields:
+      "sheets(properties(sheetId,title),data(rowData(values(effectiveFormat(textFormat(foregroundColor))))))",
     includeGridData: "true",
     ranges: range,
   });
@@ -94,16 +96,16 @@ function fontColorAt(metadata, rowIndex, columnIndex = 0) {
       ?.effectiveFormat?.textFormat?.foregroundColor;
   if (!color) return "";
   if (
-    Math.abs((color.red || 0)) < 0.001 &&
-    Math.abs((color.green || 0)) < 0.001 &&
+    Math.abs(color.red || 0) < 0.001 &&
+    Math.abs(color.green || 0) < 0.001 &&
     Math.abs((color.blue || 0) - 1) < 0.001
   ) {
     return "#0000ff";
   }
   if (
     Math.abs((color.red || 0) - 1) < 0.001 &&
-    Math.abs((color.green || 0)) < 0.001 &&
-    Math.abs((color.blue || 0)) < 0.001
+    Math.abs(color.green || 0) < 0.001 &&
+    Math.abs(color.blue || 0) < 0.001
   ) {
     return "#ff0000";
   }
@@ -236,7 +238,9 @@ async function listUsers(password, includeName = false, env) {
     readValues(env, USER_MASTER_SPREADSHEET_ID, "'NKD Master'!A2:M"),
     readValues(env, USER_MASTER_SPREADSHEET_ID, "'Other User Master'!A2:N"),
   ]);
-  const normalizedPassword = String(password ?? "").trim().toLowerCase();
+  const normalizedPassword = String(password ?? "")
+    .trim()
+    .toLowerCase();
   const response = {
     data: [],
     isAdminAccess: false,
@@ -250,7 +254,9 @@ async function listUsers(password, includeName = false, env) {
 
     if (
       normalizedPassword &&
-      String(row[7] ?? "").trim().toLowerCase() === normalizedPassword
+      String(row[7] ?? "")
+        .trim()
+        .toLowerCase() === normalizedPassword
     ) {
       response.role = row[10] ?? "";
       if (includeName) response.name = row[6] ?? "";
@@ -355,7 +361,7 @@ async function getStock(env) {
         [...headers, ...extraHeaders].map((header, index) => [
           header,
           index < headers.length
-            ? row[index] ?? ""
+            ? (row[index] ?? "")
             : [
                 details.price,
                 details.expiryDays,
@@ -388,10 +394,13 @@ async function getStock(env) {
   for (const rootItem of rows.filter(
     (row) => row.ProductType === "Root-dependent-item",
   )) {
-    for (const { base, quantity, price, expiryDays } of
-      itemConsumptionMap.get(rootItem.Item) || []) {
+    for (const { base, quantity, price, expiryDays } of itemConsumptionMap.get(
+      rootItem.Item,
+    ) || []) {
       if (quantity <= 0) {
-        throw new Error(`BOM quantity for '${rootItem.Item}' must be greater than zero`);
+        throw new Error(
+          `BOM quantity for '${rootItem.Item}' must be greater than zero`,
+        );
       }
       rows.push({
         DateTime: `${dateString} ${timeString}`,
@@ -472,7 +481,11 @@ function buildSaleMessage(saleData) {
   const first = selectedItems[0] || {};
   const rawStatus = String(first.paymentStatus || "n/a").toLowerCase();
   const formattedStatus =
-    rawStatus === "paid" ? "✅ Paid" : rawStatus === "pending" ? "❌ Pending" : "N/A";
+    rawStatus === "paid"
+      ? "✅ Paid"
+      : rawStatus === "pending"
+        ? "❌ Pending"
+        : "N/A";
   let grandTotal = 0;
   let message =
     `🛒 Nature's Bill 🛒\n\n` +
@@ -524,7 +537,11 @@ function buildSaleMessage(saleData) {
 }
 
 async function markOrderDelivered(env, billNumber) {
-  const values = await readValues(env, MAIN_SHEET_ID, `'${USER_ORDER_SHEET}'!A:P`);
+  const values = await readValues(
+    env,
+    MAIN_SHEET_ID,
+    `'${USER_ORDER_SHEET}'!A:P`,
+  );
   const matchingRows = [];
   for (let index = 1; index < values.length; index++) {
     if (values[index][8] === billNumber) matchingRows.push(index + 1);
@@ -614,7 +631,10 @@ async function createSale(requestData, env) {
 async function addNewUser(requestData, env) {
   const input = parseJsonValue(requestData.inputData, "inputData");
   const users = Array.isArray(input) ? input : [input];
-  if (users.length === 0 || users.some((item) => !item || typeof item !== "object")) {
+  if (
+    users.length === 0 ||
+    users.some((item) => !item || typeof item !== "object")
+  ) {
     throw new Error("inputData must contain a user object or array of users");
   }
   const now = new Date();
@@ -645,7 +665,10 @@ async function addNewUser(requestData, env) {
 async function addLibraryUser(requestData, env) {
   const input = parseJsonValue(requestData.inputData, "inputData");
   const users = Array.isArray(input) ? input : [input];
-  if (users.length === 0 || users.some((item) => !item || typeof item !== "object")) {
+  if (
+    users.length === 0 ||
+    users.some((item) => !item || typeof item !== "object")
+  ) {
     throw new Error("inputData must contain a user object or array of users");
   }
 
@@ -692,7 +715,10 @@ async function getLibraryUserList(env) {
 async function issueLibraryBook(requestData, env) {
   const input = parseJsonValue(requestData.inputData, "inputData");
   const entries = Array.isArray(input) ? input : [input];
-  if (entries.length === 0 || entries.some((item) => !item || typeof item !== "object")) {
+  if (
+    entries.length === 0 ||
+    entries.some((item) => !item || typeof item !== "object")
+  ) {
     throw new Error("inputData must contain one or more issue-book objects");
   }
 
@@ -748,13 +774,19 @@ async function readyUserOrder(requestData, env) {
   if (!Array.isArray(newData) || newData.length === 0) {
     throw new Error("inputData must be a non-empty order array");
   }
-  const sheetRows = await readValues(env, MAIN_SHEET_ID, `'${USER_ORDER_SHEET}'!A:Z`);
+  const sheetRows = await readValues(
+    env,
+    MAIN_SHEET_ID,
+    `'${USER_ORDER_SHEET}'!A:Z`,
+  );
   const headers = sheetRows[0] || [];
   const billNoIndex = headers.indexOf("BillNo");
   const statusIndex = headers.indexOf("OrderStatus");
   const keyIndex = headers.indexOf("Key");
   if (billNoIndex < 0 || statusIndex < 0 || keyIndex < 0) {
-    throw new Error("User Order Master must contain BillNo, OrderStatus, and Key headers");
+    throw new Error(
+      "User Order Master must contain BillNo, OrderStatus, and Key headers",
+    );
   }
   const targetBillNo = newData[0].BillNo;
   const newKeys = new Set(newData.map((item) => item.Key));
@@ -767,25 +799,36 @@ async function readyUserOrder(requestData, env) {
     if (!newKeys.has(current[keyIndex])) {
       const updated = [...current];
       updated[statusIndex] = "Deleted";
-      updates.push({ range: `'${USER_ORDER_SHEET}'!A${rowNumber}:Z${rowNumber}`, values: [updated] });
+      updates.push({
+        range: `'${USER_ORDER_SHEET}'!A${rowNumber}:Z${rowNumber}`,
+        values: [updated],
+      });
       continue;
     }
     if (replacement) {
       const updated = headers.map((header, column) =>
         column < 2
-          ? current[column] ?? ""
+          ? (current[column] ?? "")
           : replacement[header] !== undefined
             ? replacement[header]
-            : current[column] ?? "",
+            : (current[column] ?? ""),
       );
-      updates.push({ range: `'${USER_ORDER_SHEET}'!A${rowNumber}:Z${rowNumber}`, values: [updated] });
+      updates.push({
+        range: `'${USER_ORDER_SHEET}'!A${rowNumber}:Z${rowNumber}`,
+        values: [updated],
+      });
     }
   }
   if (updates.length) {
-    await sheetsRequest(env, MAIN_SHEET_ID, "/values:batchUpdate?valueInputOption=USER_ENTERED", {
-      method: "POST",
-      body: JSON.stringify({ data: updates }),
-    });
+    await sheetsRequest(
+      env,
+      MAIN_SHEET_ID,
+      "/values:batchUpdate?valueInputOption=USER_ENTERED",
+      {
+        method: "POST",
+        body: JSON.stringify({ data: updates }),
+      },
+    );
   }
   return true;
 }
@@ -823,8 +866,14 @@ async function getKhataBookByUserId(requestData, env) {
   const requestedId = String(input.sheetId ?? "").trim();
   if (!requestedId) throw new Error("inputData.sheetId is required");
   const knownSheets = await getCreditSheetMap(env);
-  if (![...knownSheets.values()].some((entry) => entry.spreadsheetId === requestedId)) {
-    throw new Error("The requested sheetId is not registered in CreditNameMaster");
+  if (
+    ![...knownSheets.values()].some(
+      (entry) => entry.spreadsheetId === requestedId,
+    )
+  ) {
+    throw new Error(
+      "The requested sheetId is not registered in CreditNameMaster",
+    );
   }
   const values = await readValues(env, requestedId, "Sheet1!A:Z");
   const headers = values[0] || [];
@@ -847,11 +896,19 @@ async function updateCreditBalance(requestData, env) {
   const customer = (await getCreditSheetMap(env)).get(name);
   if (!customer) throw new Error(`Customer sheet not found: ${name}`);
 
-  const customerRows = await readValues(env, customer.spreadsheetId, "Sheet1!A:E");
+  const customerRows = await readValues(
+    env,
+    customer.spreadsheetId,
+    "Sheet1!A:E",
+  );
   const row2 = customerRows[1] || [];
   const lastBalance = Number(row2[4]) || 0;
   const newBalance = lastBalance - amount;
-  const customerMeta = await getSheetMetadata(env, customer.spreadsheetId, "Sheet1!A:E");
+  const customerMeta = await getSheetMetadata(
+    env,
+    customer.spreadsheetId,
+    "Sheet1!A:E",
+  );
   const customerSheetId = sheetIdFor(customerMeta, "Sheet1");
   const row2IsEmpty = row2.every((value) => value === "");
   const customerRequests = [];
@@ -894,9 +951,12 @@ async function updateCreditBalance(requestData, env) {
       },
     },
   ]);
-  await updateValues(env, CREDIT_ACTIVITY_SPREADSHEET_ID, "'CreditRecdMaster'!A2:D2", [
-    [timestamp(), name, amount, selectedType],
-  ]);
+  await updateValues(
+    env,
+    CREDIT_ACTIVITY_SPREADSHEET_ID,
+    "'CreditRecdMaster'!A2:D2",
+    [[timestamp(), name, amount, selectedType]],
+  );
   await updateValues(
     env,
     CREDIT_ACTIVITY_SPREADSHEET_ID,
@@ -908,7 +968,9 @@ async function updateCreditBalance(requestData, env) {
 
 async function getUserInfoByPassword(requestData, env) {
   const input = parseJsonValue(requestData.inputData, "inputData") || {};
-  const password = String(input.password ?? "").trim().toLowerCase();
+  const password = String(input.password ?? "")
+    .trim()
+    .toLowerCase();
   if (!password) throw new Error("inputData.password is required");
   const [masterRows, otherRows] = await Promise.all([
     readValues(env, USER_MASTER_SPREADSHEET_ID, "'NKD Master'!A2:M"),
@@ -924,7 +986,9 @@ async function getUserInfoByPassword(requestData, env) {
     if (!String(row[0] ?? "")) break;
     if (
       row[3] === "Active" &&
-      String(row[7] ?? "").trim().toLowerCase() === password
+      String(row[7] ?? "")
+        .trim()
+        .toLowerCase() === password
     ) {
       response.isUserFound = true;
       response.role = row[10] ?? "";
@@ -942,7 +1006,11 @@ async function getUserInfoByPassword(requestData, env) {
   }
   for (const row of otherRows) {
     if (!String(row[1] ?? "")) break;
-    if (String(row[8] ?? "").trim().toLowerCase() === password) {
+    if (
+      String(row[8] ?? "")
+        .trim()
+        .toLowerCase() === password
+    ) {
       response.isUserFound = true;
       response.userDetails = {
         name: row[1] ?? "",
@@ -1011,7 +1079,9 @@ async function updateActivityMaster(env) {
       const batchIndex = stockHeaders.indexOf("Batch/Date of Manufacture");
       const itemIndex = stockHeaders.indexOf("Item");
       if (locationIndex < 0 || batchIndex < 0 || itemIndex < 0) {
-        throw new Error("Stock Master is missing the item, batch, or location column");
+        throw new Error(
+          "Stock Master is missing the item, batch, or location column",
+        );
       }
       const batchDate = formattedDate(batch);
       const quantity = Number(rawQuantity) || 0;
@@ -1022,7 +1092,8 @@ async function updateActivityMaster(env) {
           String(stockRow[itemIndex] ?? "").trim() === item &&
           formattedDate(stockRow[batchIndex]) === batchDate
         ) {
-          stockRow[locationIndex] = (Number(stockRow[locationIndex]) || 0) + quantity;
+          stockRow[locationIndex] =
+            (Number(stockRow[locationIndex]) || 0) + quantity;
           stockRow[0] = timestamp();
           stockRow[4] = category ?? "";
           found = true;
@@ -1041,7 +1112,10 @@ async function updateActivityMaster(env) {
       colorUpdates.push({ rowNumber, color: "blue" });
       processed++;
     } catch (error) {
-      console.error(`Failed to process Activity Master row ${rowNumber}:`, error);
+      console.error(
+        `Failed to process Activity Master row ${rowNumber}:`,
+        error,
+      );
       errors.push({
         rowNumber,
         message: error?.message || "Failed to update stock from production row",
@@ -1070,30 +1144,67 @@ async function updateActivityMaster(env) {
   };
 }
 
+// Fixed dependency map
 function getFixedDependencyMap() {
   return {
-    "Pizza Mini Pan": { "Pizza Base Mini": 1 },
-    "Cream Roll Choco": { "Cream roll waffer": 1 },
-    "Burger Veggie Cheese": { "Aloo Tikki": 1, "Bun Plain": 1 },
-    "Cream Roll Plain": { "Cream roll waffer": 1 },
-    "Grilled Sandwich": { "Bread Whole Wheat Slices": 2 },
-    "Chaumeen Full Plate": { "Nkd Noddles": 150 },
-    "Gol Gappe Pani": { "Gol Gappe": 5 },
-    "Icing cake": { "Icing cake Base": 1 },
-    "Bun Plain Row": { "Bun Plain": 1 },
-    "Gol Gappe Chaat": { "Gol Gappe": 5 },
-    "Chaumeen Half Plate": { "Nkd Noddles": 80 },
-    Pastry: { "Pastry Base": 1 },
-    "Pizza Bun": { "Bun Plain": 1 },
-    Tart: { "Tart biscuits": 1 },
-    "Samosa Row": { Samosa: 1 },
-    "Burger Veggie": { "Bun Plain": 1, "Aloo Tikki": 1 },
-    "Samosa Chaat": { Samosa: 1 },
-    "Bread Whole Wheat": { "Bread Whole Wheat Slices": 10 },
+    "Pizza Mini Pan": {
+      items: { "Pizza Base Mini": 1.0 },
+      count: 1.0,
+      src: 1.0,
+    },
+    "Cream Roll Choco": {
+      items: { "Cream roll waffer": 1.0 },
+      count: 1.0,
+      src: 1.0,
+    },
+    "Burger Veggie Cheese": {
+      items: { "Aloo Tikki": 1.0, "Bun Plain": 1.0 },
+      count: 2.0,
+      src: 1.0,
+    },
+    "Cream Roll Plain": {
+      items: { "Cream roll waffer": 1.0 },
+      count: 1.0,
+      src: 1.0,
+    },
+    "Grilled Sandwich": {
+      items: { "Bread Whole Wheat Slices": 2.0 },
+      count: 1.0,
+      src: 1.0,
+    },
+    "Chaumeen Full Plate": {
+      items: { "Nkd Noddles": 150.0 },
+      count: 1.0,
+      src: 1.0,
+    },
+    "Gol Gappe Pani": { items: { "Gol Gappe": 5.0 }, count: 1.0, src: 1.0 },
+    "Icing cake": { items: { "Icing cake Base": 1.0 }, count: 1.0, src: 1.0 },
+    "Bun Plain Row": { items: { "Bun Plain": 1.0 }, count: 1.0, src: 1.0 },
+    "Gol Gappe Chaat": { items: { "Gol Gappe": 5.0 }, count: 1.0, src: 1.0 },
+    "Chaumeen Half Plate": {
+      items: { "Nkd Noddles": 80.0 },
+      count: 1.0,
+      src: 1.0,
+    },
+    Pastry: { items: { "Pastry Base": 1.0 }, count: 1.0, src: 1.0 },
+    "Pizza Bun": { items: { "Bun Plain": 1.0 }, count: 1.0, src: 1.0 },
+    Tart: { items: { "Tart biscuits": 1.0 }, count: 1.0, src: 1.0 },
+    "Samosa Row": { items: { Samosa: 1.0 }, count: 1.0, src: 1.0 },
+    "Burger Veggie": {
+      items: { "Bun Plain": 1.0, "Aloo Tikki": 1.0 },
+      count: 2.0,
+      src: 1.0,
+    },
+    "Samosa Chaat": { items: { Samosa: 1.0 }, count: 1.0, src: 1.0 },
+    "Bread Whole Wheat": {
+      items: { "Bread Whole Wheat Slices": 10.0 },
+      count: 1.0,
+      src: 1.0,
+    },
   };
 }
 
-async function updateStockViaSaleNew(env) {
+async function updateStockViaSaleNew_github(env) {
   const [sales, stock, salesMetadata] = await Promise.all([
     readValues(env, MAIN_SHEET_ID, "'Sale Master'!A:W"),
     readValues(env, MAIN_SHEET_ID, "'Stock Master'!A:Z"),
@@ -1213,7 +1324,7 @@ async function updateStockViaSaleNew(env) {
 }
 
 async function updateStock(env) {
-  const activityResult = await updateActivityMaster(env);
+  const activityResult = await updateActivityMaster_github(env);
   const saleResult = await updateStockViaSaleNew(env);
   const errors = [
     ...activityResult.errors.map((error) => ({
@@ -1249,7 +1360,7 @@ export const LEGACY_IMPLEMENTATIONS = {
     saveProductionData(requestData, env),
   CREATE_SALE: (requestData, env) => createSale(requestData, env),
   UPDATE_ACTIVITY_MASTER: (_requestData, env) => updateActivityMaster(env),
-  UPDATE_STOCK: (_requestData, env) => updateStock(env),
+  UPDATE_STOCK: (_requestData, env) => FUN_UPDATE_STOCK(env),
   ADD_NEW_USER: (requestData, env) => addNewUser(requestData, env),
   ADD_LIB_USER: (requestData, env) => addLibraryUser(requestData, env),
   LIB_BOOK_LIST: (_requestData, env) => getLibraryBookList(env),
@@ -1294,4 +1405,558 @@ export async function runLegacyApi(apiType, requestData, env) {
       request: requestData,
     };
   }
+}
+
+// Google Sheets API request
+async function sheetsRequestGPT(env, url, options = {}) {
+  const accessToken = await getGoogleAccessToken(env);
+
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+  });
+
+  const text = await response.text();
+
+  let data;
+
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    data = text;
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      `Google Sheets API Error ${response.status}: ${JSON.stringify(data)}`,
+    );
+  }
+
+  return data;
+}
+
+// Get complete sheet data
+async function getSheetData(env, sheetName) {
+  const range = `'${sheetName}'`;
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(range)}?valueRenderOption=UNFORMATTED_VALUE`;
+
+  const result = await sheetsRequestGPT(env, url);
+
+  return result.values || [];
+}
+
+// Update sheet values
+async function updateSheetValues(
+  env,
+  sheetName,
+  startRow,
+  startColumn,
+  values,
+) {
+  if (!values || values.length === 0) {
+    return;
+  }
+
+  const startColumnLetter = columnToLetter(startColumn);
+  const endColumnLetter = columnToLetter(startColumn + values[0].length - 1);
+  const endRow = startRow + values.length - 1;
+
+  const range = `'${sheetName}'!${startColumnLetter}${startRow}:${endColumnLetter}${endRow}`;
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`;
+
+  return sheetsRequestGPT(env, url, {
+    method: "PUT",
+    body: JSON.stringify({
+      range,
+      majorDimension: "ROWS",
+      values,
+    }),
+  });
+}
+
+// Convert column number to Excel column letter
+function columnToLetter(column) {
+  let result = "";
+
+  while (column > 0) {
+    const remainder = (column - 1) % 26;
+    result = String.fromCharCode(65 + remainder) + result;
+    column = Math.floor((column - 1) / 26);
+  }
+
+  return result;
+}
+
+// Format date as dd-MMM-yyyy
+function formatDate(value) {
+  if (value === null || value === undefined || value === "") {
+    return "";
+  }
+
+  let date;
+
+  if (typeof value === "number") {
+    date = new Date((value - 25569) * 86400000);
+  } else {
+    date = new Date(value);
+  }
+
+  if (isNaN(date.getTime())) {
+    return "";
+  }
+
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = months[date.getMonth()];
+  const year = date.getFullYear();
+
+  return `${day}-${month}-${year}`;
+}
+
+// Get current timestamp
+function getTimestamp() {
+  return new Date().toISOString();
+}
+
+// Get Google Sheet ID by sheet name
+async function getSheetId(env, sheetName) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}?fields=sheets.properties`;
+
+  const result = await sheetsRequestGPT(env, url);
+
+  const sheet = (result.sheets || []).find(
+    (x) => x.properties?.title === sheetName,
+  );
+
+  if (!sheet) {
+    throw new Error(`Sheet not found: ${sheetName}`);
+  }
+
+  return sheet.properties.sheetId;
+}
+
+// Get font colors from column A
+async function getColumnAColors(env, sheetName, rowCount) {
+  if (rowCount <= 1) {
+    return [];
+  }
+
+  const range = `'${sheetName}'!A2:A${rowCount}`;
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}?includeGridData=true&ranges=${encodeURIComponent(range)}`;
+
+  const result = await sheetsRequestGPT(env, url);
+
+  const sheetData = result.sheets?.[0]?.data?.[0]?.rowData || [];
+
+  return sheetData.map((row) => {
+    const color = row.values?.[0]?.effectiveFormat?.textFormat?.foregroundColor;
+
+    if (!color) {
+      return "";
+    }
+
+    const r = color.red || 0;
+    const g = color.green || 0;
+    const b = color.blue || 0;
+
+    if (b > 0.8 && r < 0.2 && g < 0.2) {
+      return "#0000ff";
+    }
+
+    if (r > 0.8 && g < 0.2 && b < 0.2) {
+      return "#ff0000";
+    }
+
+    return "";
+  });
+}
+
+// Update font colors in column A
+async function updateFontColors(env, sheetId, startRow, colors) {
+  if (!colors || colors.length === 0) {
+    return;
+  }
+
+  const requests = colors.map((color, index) => ({
+    repeatCell: {
+      range: {
+        sheetId,
+        startRowIndex: startRow - 1 + index,
+        endRowIndex: startRow + index,
+        startColumnIndex: 0,
+        endColumnIndex: 1,
+      },
+      cell: {
+        userEnteredFormat: {
+          textFormat: {
+            foregroundColor:
+              color.toLowerCase() === "#0000ff"
+                ? { red: 0, green: 0, blue: 1 }
+                : { red: 1, green: 0, blue: 0 },
+          },
+        },
+      },
+      fields: "userEnteredFormat.textFormat.foregroundColor",
+    },
+  }));
+
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}:batchUpdate`;
+
+  return sheetsRequestGPT(env, url, {
+    method: "POST",
+    body: JSON.stringify({ requests }),
+  });
+}
+
+// Main stock update method
+export async function FUN_UPDATE_STOCK(env) {
+  console.log("FUN_UPDATE_STOCK started");
+
+  try {
+    console.log("Calling updateActivityMaster");
+    await updateActivityMaster(env);
+
+    console.log("Calling updateStockViaSaleNew");
+    const result = await updateStockViaSaleNew(env);
+
+    console.log("FUN_UPDATE_STOCK completed");
+
+    return result;
+  } catch (error) {
+    console.error("FUN_UPDATE_STOCK Error:", error.stack || error.toString());
+
+    // Add your common email function here if required
+    // await SendMailToAdmin(env, "NKD Sales Error", "FUN_UPDATE_STOCK", error.stack || error.toString());
+
+    throw error;
+  }
+}
+
+// Update stock based on sales
+async function updateStockViaSaleNew(env) {
+  console.log("updateStockViaSaleNew started");
+
+  const response = {
+    status: false,
+    output: [],
+  };
+
+  try {
+    const dependencyData = getFixedDependencyMap();
+    const salesSheetName = "Sale Master";
+    const stockSheetName = "Stock Master";
+
+    const salesData = await getSheetData(env, salesSheetName);
+    const stockData = await getSheetData(env, stockSheetName);
+
+    if (!salesData.length) {
+      throw new Error("Sale Master is empty");
+    }
+
+    if (!stockData.length) {
+      throw new Error("Stock Master is empty");
+    }
+
+    const stockHeaders = stockData[0];
+    const salesFontColors = await getColumnAColors(
+      env,
+      salesSheetName,
+      salesData.length,
+    );
+    const updatedFontColors = [];
+
+    for (let i = 1; i < salesData.length; i++) {
+      const salesRow = salesData[i] || [];
+      const fontColor = salesFontColors[i - 1] || "";
+
+      if (fontColor === "#0000ff" || fontColor === "#ff0000") {
+        updatedFontColors.push([fontColor]);
+        continue;
+      }
+
+      const saleItem = String(salesRow[2] || "").trim();
+      const saleBatch = salesRow[3];
+      const saleQty = Number(salesRow[4]) || 0;
+      const saleLocation = salesRow[10];
+      const category = salesRow[13];
+
+      let updatedColor = "#ff0000";
+
+      if (!saleItem || !saleBatch || saleQty === 0) {
+        updatedFontColors.push([updatedColor]);
+        continue;
+      }
+
+      const formattedSaleBatch = formatDate(saleBatch);
+      let isStockUpdated = false;
+
+      if (dependencyData[saleItem]) {
+        const dependentItems = dependencyData[saleItem].items;
+
+        for (const dependentItem in dependentItems) {
+          const requiredQty = dependentItems[dependentItem] * saleQty;
+          let dependentFound = false;
+
+          for (let j = 1; j < stockData.length; j++) {
+            const row = stockData[j];
+            const stockItem = String(row[1] || "").trim();
+            const stockQty = Number(row[3]) || 0;
+
+            if (stockItem === dependentItem && stockQty > 0) {
+              row[3] = stockQty - requiredQty;
+              row[0] = getTimestamp();
+              row[4] = category;
+
+              dependentFound = true;
+              isStockUpdated = true;
+
+              response.output.push({
+                item: stockItem,
+                batch: formattedSaleBatch,
+                location: saleLocation,
+                qty: saleQty,
+                category,
+              });
+
+              break;
+            }
+          }
+
+          if (!dependentFound) {
+            const newRow = Array(stockHeaders.length).fill("");
+
+            newRow[0] = getTimestamp();
+            newRow[1] = dependentItem;
+            newRow[2] = formattedSaleBatch;
+            newRow[3] = -requiredQty;
+            newRow[4] = category;
+
+            stockData.push(newRow);
+
+            isStockUpdated = true;
+
+            response.output.push({
+              item: dependentItem,
+              batch: formattedSaleBatch,
+              location: saleLocation,
+              qty: saleQty,
+              category,
+            });
+          }
+        }
+      } else {
+        const locationIndex = stockHeaders.indexOf(saleLocation);
+
+        if (locationIndex === -1) {
+          throw new Error(
+            `Location column not found in Stock Master: ${saleLocation}`,
+          );
+        }
+
+        for (let j = 1; j < stockData.length; j++) {
+          const row = stockData[j];
+          const stockItem = String(row[1] || "").trim();
+          const stockBatch = row[2];
+          const formattedStockBatch = formatDate(stockBatch);
+
+          if (
+            stockItem === saleItem &&
+            formattedStockBatch === formattedSaleBatch
+          ) {
+            const currentStock = Number(row[locationIndex]) || 0;
+
+            row[locationIndex] = currentStock - saleQty;
+            row[0] = getTimestamp();
+            row[4] = category;
+
+            isStockUpdated = true;
+
+            response.output.push({
+              item: stockItem,
+              batch: formattedSaleBatch,
+              location: saleLocation,
+              qty: saleQty,
+              category,
+            });
+
+            break;
+          }
+        }
+      }
+
+      if (isStockUpdated) {
+        updatedColor = "#0000ff";
+      }
+
+      updatedFontColors.push([updatedColor]);
+    }
+
+    if (stockData.length > 1) {
+      await updateSheetValues(env, stockSheetName, 2, 1, stockData.slice(1));
+    }
+
+    if (updatedFontColors.length > 0) {
+      const saleSheetId = await getSheetId(env, salesSheetName);
+      await updateFontColors(
+        env,
+        saleSheetId,
+        2,
+        updatedFontColors.map((x) => x[0]),
+      );
+    }
+
+    response.status = true;
+    response.output = "updated";
+
+    return response;
+  } catch (error) {
+    console.error(
+      "updateStockViaSaleNew Error:",
+      error.stack || error.toString(),
+    );
+
+    response.status = false;
+    response.data = error.stack || error.toString();
+
+    throw error;
+  }
+}
+
+// Update stock based on Activity Master
+async function updateActivityMaster(env) {
+  console.log("updateActivityMaster started");
+
+  const activitySheetName = "Activity Master";
+  const stockSheetName = "Stock Master";
+
+  const activityData = await getSheetData(env, activitySheetName);
+  let stockData = await getSheetData(env, stockSheetName);
+
+  if (!activityData.length) {
+    return;
+  }
+
+  if (!stockData.length) {
+    throw new Error("Stock Master is empty");
+  }
+
+  const stockHeaders = stockData[0];
+  const activityFontColors = await getColumnAColors(
+    env,
+    activitySheetName,
+    activityData.length,
+  );
+  const activityColors = [];
+
+  for (let rowIndex = 1; rowIndex < activityData.length; rowIndex++) {
+    const row = activityData[rowIndex] || [];
+
+    const inputDate = row[0];
+    const item = row[1];
+    const batch = row[2];
+    let qty = row[3];
+    const comments = row[4];
+    const transactionType = row[5];
+    const location = row[6];
+    const category = row[7];
+
+    const fontColor = activityFontColors[rowIndex - 1] || "";
+
+    if (fontColor === "#0000ff" || fontColor === "#ff0000") {
+      activityColors.push(fontColor);
+      continue;
+    }
+
+    try {
+      if (transactionType === "Production") {
+        const formattedBatch = formatDate(batch);
+
+        const locationIndex = stockHeaders.indexOf(location);
+        const itemIndex = stockHeaders.indexOf("Item");
+        const batchIndex = stockHeaders.indexOf("Batch/Date of Manufacture");
+
+        if (locationIndex === -1) {
+          throw new Error(`Location column not found: ${location}`);
+        }
+
+        if (itemIndex === -1) {
+          throw new Error("Item column not found in Stock Master");
+        }
+
+        if (batchIndex === -1) {
+          throw new Error("Batch/Date of Manufacture column not found");
+        }
+
+        qty = Number(qty) || 0;
+
+        let itemFound = false;
+
+        for (let i = 1; i < stockData.length; i++) {
+          const stockRow = stockData[i];
+
+          const stockItem = String(stockRow[itemIndex] || "").trim();
+          const stockBatch = stockRow[batchIndex];
+          const formattedStockBatch = formatDate(stockBatch);
+
+          if (stockItem === item && formattedStockBatch === formattedBatch) {
+            stockRow[locationIndex] =
+              (Number(stockRow[locationIndex]) || 0) + qty;
+            stockRow[0] = getTimestamp();
+            stockRow[4] = category;
+
+            itemFound = true;
+            break;
+          }
+        }
+
+        if (!itemFound) {
+          const newRow = Array(stockHeaders.length).fill("");
+
+          newRow[0] = getTimestamp();
+          newRow[itemIndex] = item;
+          newRow[batchIndex] = formattedBatch;
+          newRow[locationIndex] = qty;
+          newRow[4] = category;
+
+          stockData.push(newRow);
+        }
+
+        activityColors.push("#0000ff");
+      } else {
+        activityColors.push(fontColor);
+      }
+    } catch (error) {
+      console.error(`Activity row ${rowIndex + 1} error:`, error);
+      activityColors.push("#ff0000");
+    }
+  }
+
+  if (stockData.length > 1) {
+    await updateSheetValues(env, stockSheetName, 2, 1, stockData.slice(1));
+  }
+
+  if (activityColors.length > 0) {
+    const activitySheetId = await getSheetId(env, activitySheetName);
+    await updateFontColors(env, activitySheetId, 2, activityColors);
+  }
+
+  console.log("updateActivityMaster completed");
 }
