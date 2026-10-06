@@ -1,0 +1,17 @@
+# Cloudflare local files
+.wrangler/
+
+# Node dependencies
+node_modules/
+
+# Local secrets
+.dev.vars
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
