@@ -6,6 +6,8 @@ export const APPS_SCRIPT_SPREADSHEET_ID =
   "1jdrhL1fsLj-I1p1UtwkK4EfLh8QwszhFMe2uCu1qk7k";
 export const CREDIT_ACTIVITY_SPREADSHEET_ID =
   "1gQ7VYdkUFbur38wCXqLcJBwSbOyVQu0apK7_QPg3M78";
+export const CREDIT_ACTIVITY_MASTER_SHEET_ID =
+  "1gQ7VYdkUFbur38wCXqLcJBwSbOyVQu0apK7_QPg3M78";
 
 async function readSecret(env, name) {
   const value = env[name];
@@ -28,7 +30,9 @@ async function readSecret(env, name) {
     return undefined;
   }
 
-  throw new Error(`${name} must be a string or a readable Secrets Store binding`);
+  throw new Error(
+    `${name} must be a string or a readable Secrets Store binding`,
+  );
 }
 
 // Google Authentication
@@ -60,7 +64,8 @@ export async function getGoogleAccessToken(env) {
 
   const payload = {
     iss: clientEmail,
-    scope: "https://www.googleapis.com/auth/spreadsheets",
+    scope:
+      "https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive",
     aud: "https://oauth2.googleapis.com/token",
     iat: now,
     exp: now + 3600,
