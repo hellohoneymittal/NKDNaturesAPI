@@ -37,5 +37,10 @@
       "store_id": "64da724ad0c54d46b8bcb0a0f3a2d4b3",
       "secret_name": "NATURES_CLIENT_SECRET",
     },
+    {
+      "binding": "NATURES_REFRESH_TOKEN_STORE",
+      "store_id": "64da724ad0c54d46b8bcb0a0f3a2d4b3",
+      "secret_name": "NATURES_REFRESH_TOKEN",
+    },
   ],
 }

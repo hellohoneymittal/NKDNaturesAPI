@@ -52,6 +52,64 @@ function createOAuthState() {
   return crypto.randomUUID();
 }
 
+async function getGoogleAccessTokenAppscript(env) {
+  const clientId = await getGoogleClientId(env);
+  const clientSecret = await getGoogleClientSecret(env);
+  const refreshToken = await env.NATURES_REFRESH_TOKEN_STORE.get();
+
+  const body = new URLSearchParams({
+    client_id: clientId,
+    client_secret: clientSecret,
+    refresh_token: refreshToken,
+    grant_type: "refresh_token",
+  });
+
+  const response = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body,
+  });
+
+  const data = await response.json();
+
+  if (!response.ok || !data.access_token) {
+    throw new Error(
+      `Google access token refresh failed: ${JSON.stringify(data)}`,
+    );
+  }
+
+  return data.access_token;
+}
+
+async function runAppsScriptFunction(env, functionName, parameters = []) {
+  const accessToken = await getGoogleAccessTokenAppscript(env);
+
+  const response = await fetch(
+    `https://script.googleapis.com/v1/scripts/${GOOGLE_SCRIPT_ID}:run`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        function: functionName,
+        parameters,
+      }),
+    },
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(`Apps Script API failed: ${JSON.stringify(data)}`);
+  }
+
+  return data;
+}
+
 async function exchangeGoogleCode(code, env) {
   const clientId = await getGoogleClientId(env);
   const clientSecret = await getGoogleClientSecret(env);
@@ -161,6 +219,40 @@ export default {
           {
             status: 400,
             headers: {
+              "Content-Type": "application/json",
+            },
+          },
+        );
+      }
+    }
+    if (request.method === "GET" && url.pathname === "/test-apps-script") {
+      try {
+        const result = await runAppsScriptFunction(env, "TEST_CLOUDFLARE");
+
+        return new Response(
+          JSON.stringify({
+            status: true,
+            message: "Apps Script executed successfully",
+            result,
+          }),
+          {
+            status: 200,
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "application/json",
+            },
+          },
+        );
+      } catch (error) {
+        return new Response(
+          JSON.stringify({
+            status: false,
+            message: error?.message || "Apps Script execution failed",
+          }),
+          {
+            status: 200,
+            headers: {
+              ...corsHeaders,
               "Content-Type": "application/json",
             },
           },
