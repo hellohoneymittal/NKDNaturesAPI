@@ -27,5 +27,15 @@
       "store_id": "64da724ad0c54d46b8bcb0a0f3a2d4b3",
       "secret_name": "NATURES_PRIVATE_KEY",
     },
+    {
+      "binding": "NATURES_PRIVATE_11",
+      "store_id": "64da724ad0c54d46b8bcb0a0f3a2d4b3",
+      "secret_name": "NATURES_PRIVATE_KEY",
+    },
+    {
+      "binding": "NATURES_PRIVATE_22",
+      "store_id": "64da724ad0c54d46b8bcb0a0f3a2d4b3",
+      "secret_name": "NATURES_PRIVATE_KEY",
+    },
   ],
 }
