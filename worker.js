@@ -16,7 +16,7 @@ const GOOGLE_REDIRECT_URI =
 
 const GOOGLE_SCOPES = "https://www.googleapis.com/auth/spreadsheets";
 
-function getGoogleOAuthUrl(env, state) {
+function getGoogleOAuthUrls(env, state) {
   const params = new URLSearchParams({
     client_id: env.GOOGLE_CLIENT_ID,
     redirect_uri: GOOGLE_REDIRECT_URI,
@@ -81,7 +81,7 @@ export default {
     // OAuth start
     if (request.method === "GET" && url.pathname === "/oauth/start") {
       const state = createOAuthState();
-      const oauthUrl = getGoogleOAuthUrl(env, state);
+      const oauthUrl = getGoogleOAuthUrls(env, state);
 
       return new Response(null, {
         status: 302,
