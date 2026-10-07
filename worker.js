@@ -8,9 +8,62 @@ import {
   SEARCH_VOUCHER,
 } from "./api/ApplicationMethod.js";
 import { runLegacyApi } from "./api/LegacyApplicationMethods.js";
+const GOOGLE_SCRIPT_ID =
+  "1JdxzMnE6B6gJCji6HF-NDjVqdteZOQoHHnNjNkVRg1BRfZ0f4m-_5zh3";
+
+const GOOGLE_REDIRECT_URI =
+  "https://natures-api.nkd-community-gzb.workers.dev/oauth/callback";
+
+const GOOGLE_SCOPES = "https://www.googleapis.com/auth/spreadsheets";
+
+function getGoogleOAuthUrl(env, state) {
+  const params = new URLSearchParams({
+    client_id: env.GOOGLE_CLIENT_ID,
+    redirect_uri: GOOGLE_REDIRECT_URI,
+    response_type: "code",
+    access_type: "offline",
+    prompt: "consent",
+    scope: GOOGLE_SCOPES,
+    state,
+  });
+
+  return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+}
+
+function createOAuthState() {
+  return crypto.randomUUID();
+}
+
+async function exchangeGoogleCode(code, env) {
+  const body = new URLSearchParams({
+    code,
+    client_id: env.GOOGLE_CLIENT_ID,
+    client_secret: env.GOOGLE_CLIENT_SECRET,
+    redirect_uri: GOOGLE_REDIRECT_URI,
+    grant_type: "authorization_code",
+  });
+
+  const response = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body,
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(`Google token exchange failed: ${JSON.stringify(data)}`);
+  }
+
+  return data;
+}
 
 export default {
   async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+
     const corsHeaders = {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -25,8 +78,76 @@ export default {
       });
     }
 
-    // Health check
+    // OAuth start
+    if (request.method === "GET" && url.pathname === "/oauth/start") {
+      const state = createOAuthState();
+      const oauthUrl = getGoogleOAuthUrl(env, state);
 
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: oauthUrl,
+          "Set-Cookie": `oauth_state=${state}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=600`,
+        },
+      });
+    }
+
+    // OAuth callback
+    if (request.method === "GET" && url.pathname === "/oauth/callback") {
+      try {
+        const code = url.searchParams.get("code");
+        const returnedState = url.searchParams.get("state");
+        const cookie = request.headers.get("Cookie") || "";
+
+        const stateMatch = cookie.match(/oauth_state=([^;]+)/);
+        const storedState = stateMatch?.[1];
+
+        if (!code) {
+          throw new Error("Authorization code missing");
+        }
+
+        if (!returnedState || !storedState || returnedState !== storedState) {
+          throw new Error("Invalid OAuth state");
+        }
+
+        const tokenData = await exchangeGoogleCode(code, env);
+
+        return new Response(
+          JSON.stringify({
+            status: true,
+            message: "Google OAuth successful",
+            accessTokenReceived: !!tokenData.access_token,
+            refreshTokenReceived: !!tokenData.refresh_token,
+            expiresIn: tokenData.expires_in,
+            scope: tokenData.scope,
+            refreshToken: tokenData.refresh_token || null,
+          }),
+          {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+              "Set-Cookie":
+                "oauth_state=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0",
+            },
+          },
+        );
+      } catch (error) {
+        return new Response(
+          JSON.stringify({
+            status: false,
+            message: error?.message || "OAuth callback failed",
+          }),
+          {
+            status: 400,
+            headers: {
+              "Content-Type": "application/json",
+            },
+          },
+        );
+      }
+    }
+
+    // Health check
     if (request.method === "GET") {
       return new Response(
         JSON.stringify({
@@ -90,13 +211,18 @@ export default {
           break;
 
         case "UPDATE_STOCK": {
-          const lockId = env.STOCK_UPDATE_LOCK.idFromName("global-stock-update");
+          const lockId = env.STOCK_UPDATE_LOCK.idFromName(
+            "global-stock-update",
+          );
           const lock = env.STOCK_UPDATE_LOCK.get(lockId);
-          const lockResponse = await lock.fetch("https://stock-update/execute", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(requestData),
-          });
+          const lockResponse = await lock.fetch(
+            "https://stock-update/execute",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(requestData),
+            },
+          );
           response = await lockResponse.json();
           break;
         }
