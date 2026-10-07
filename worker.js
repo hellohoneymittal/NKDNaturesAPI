@@ -16,13 +16,15 @@ const GOOGLE_REDIRECT_URI =
 
 const GOOGLE_SCOPES = "https://www.googleapis.com/auth/spreadsheets";
 
-function getGoogleOAuthUrls(env, state) {
+async function getGoogleOAuthUrls(env, state) {
+  const clientId = await getGoogleClientId(env);
+
   const params = new URLSearchParams({
-    client_id: env.NATURES_CLIENT_ID,
+    client_id: clientId,
     redirect_uri: GOOGLE_REDIRECT_URI,
     response_type: "code",
     access_type: "offline",
-    prompt: "consent",
+    prompt: "select_account consent",
     scope: GOOGLE_SCOPES,
     state,
   });
@@ -30,15 +32,34 @@ function getGoogleOAuthUrls(env, state) {
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 }
 
+async function getGoogleClientId(env) {
+  if (env.NATURES_CLIENT_ID_STORE) {
+    return await env.NATURES_CLIENT_ID_STORE.get();
+  }
+
+  return env.NATURES_CLIENT_ID;
+}
+
+async function getGoogleClientSecret(env) {
+  if (env.NATURES_CLIENT_SECRET_STORE) {
+    return await env.NATURES_CLIENT_SECRET_STORE.get();
+  }
+
+  return env.NATURES_CLIENT_SECRET;
+}
+
 function createOAuthState() {
   return crypto.randomUUID();
 }
 
 async function exchangeGoogleCode(code, env) {
+  const clientId = await getGoogleClientId(env);
+  const clientSecret = await getGoogleClientSecret(env);
+
   const body = new URLSearchParams({
     code,
-    client_id: env.NATURES_CLIENT_ID,
-    client_secret: env.NATURES_CLIENT_SECRET,
+    client_id: clientId,
+    client_secret: clientSecret,
     redirect_uri: GOOGLE_REDIRECT_URI,
     grant_type: "authorization_code",
   });
@@ -81,7 +102,7 @@ export default {
     // OAuth start
     if (request.method === "GET" && url.pathname === "/oauth/start") {
       const state = createOAuthState();
-      const oauthUrl = getGoogleOAuthUrls(env, state);
+      const oauthUrl = await getGoogleOAuthUrls(env, state);
 
       return new Response(null, {
         status: 302,
