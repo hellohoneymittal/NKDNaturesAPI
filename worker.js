@@ -174,9 +174,9 @@ export default {
     // OAuth callback
     if (request.method === "GET" && url.pathname === "/oauth/callback") {
       try {
+        const cookie = request.headers.get("Cookie") || "";
         const code = url.searchParams.get("code");
         const returnedState = url.searchParams.get("state");
-        const cookie = request.headers.get("Cookie") || "";
 
         const stateMatch = cookie.match(/oauth_state=([^;]+)/);
         const storedState = stateMatch?.[1];
