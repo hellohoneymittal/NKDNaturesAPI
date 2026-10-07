@@ -227,7 +227,7 @@ export default {
     }
     if (request.method === "GET" && url.pathname === "/test-apps-script") {
       try {
-        const result = await runAppsScriptFunction(env, "TEST_CLOUDFLARE");
+        const result = await runAppsScriptFunction(env, "updateNKDCreditBook");
 
         return new Response(
           JSON.stringify({
