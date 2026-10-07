@@ -18,7 +18,7 @@ const GOOGLE_SCOPES = "https://www.googleapis.com/auth/spreadsheets";
 
 function getGoogleOAuthUrls(env, state) {
   const params = new URLSearchParams({
-    client_id: env.GOOGLE_CLIENT_ID,
+    client_id: env.NATURES_CLIENT_ID,
     redirect_uri: GOOGLE_REDIRECT_URI,
     response_type: "code",
     access_type: "offline",
@@ -37,8 +37,8 @@ function createOAuthState() {
 async function exchangeGoogleCode(code, env) {
   const body = new URLSearchParams({
     code,
-    client_id: env.GOOGLE_CLIENT_ID,
-    client_secret: env.GOOGLE_CLIENT_SECRET,
+    client_id: env.NATURES_CLIENT_ID,
+    client_secret: env.NATURES_CLIENT_SECRET,
     redirect_uri: GOOGLE_REDIRECT_URI,
     grant_type: "authorization_code",
   });
