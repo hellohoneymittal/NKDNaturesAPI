@@ -14,7 +14,8 @@ const GOOGLE_SCRIPT_ID =
 const GOOGLE_REDIRECT_URI =
   "https://natures-api.nkd-community-gzb.workers.dev/oauth/callback";
 
-const GOOGLE_SCOPES = "https://www.googleapis.com/auth/spreadsheets";
+const GOOGLE_SCOPES =
+  "https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive";
 
 async function getGoogleOAuthUrls(env, state) {
   const clientId = await getGoogleClientId(env);
