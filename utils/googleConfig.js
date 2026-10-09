@@ -9,7 +9,7 @@ export const CREDIT_ACTIVITY_SPREADSHEET_ID =
 export const CREDIT_ACTIVITY_MASTER_SHEET_ID =
   "1gQ7VYdkUFbur38wCXqLcJBwSbOyVQu0apK7_QPg3M78";
 
-async function readSecret(env, name) {
+export async function readSecret(env, name) {
   const value = env[name];
 
   if (typeof value === "string") {

@@ -1,5 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
-import { TEST_KEY } from "./utils/googleConfig.js";
+import { readSecret, TEST_KEY } from "./utils/googleConfig.js";
 import {
   GET_ALL_USER_LIST_NEW,
   GET_DATA,
@@ -15,10 +15,11 @@ const GOOGLE_REDIRECT_URI =
   "https://natures-api.nkd-community-gzb.workers.dev/oauth/callback";
 
 const GOOGLE_SCOPES =
-  "https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive";
+  "https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/script.send_mail";
 
 async function getGoogleOAuthUrls(env, state) {
-  const clientId = await getGoogleClientId(env);
+  const clientId = await readSecret(env, "NATURES_CLIENT_ID");
+  const clientSecret = await readSecret(env, "NATURES_CLIENT_SECRET");
 
   const params = new URLSearchParams({
     client_id: clientId,
@@ -33,30 +34,14 @@ async function getGoogleOAuthUrls(env, state) {
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 }
 
-async function getGoogleClientId(env) {
-  if (env.NATURES_CLIENT_ID_STORE) {
-    return await env.NATURES_CLIENT_ID_STORE.get();
-  }
-
-  return env.NATURES_CLIENT_ID;
-}
-
-async function getGoogleClientSecret(env) {
-  if (env.NATURES_CLIENT_SECRET_STORE) {
-    return await env.NATURES_CLIENT_SECRET_STORE.get();
-  }
-
-  return env.NATURES_CLIENT_SECRET;
-}
-
 function createOAuthState() {
   return crypto.randomUUID();
 }
 
 async function getGoogleAccessTokenAppscript(env) {
-  const clientId = await getGoogleClientId(env);
-  const clientSecret = await getGoogleClientSecret(env);
-  const refreshToken = await env.NATURES_REFRESH_TOKEN_STORE.get();
+  const clientId = await readSecret(env, "NATURES_CLIENT_ID");
+  const clientSecret = await readSecret(env, "NATURES_CLIENT_SECRET");
+  const refreshToken = await readSecret(env, "NATURES_REFRESH_TOKEN");
 
   const body = new URLSearchParams({
     client_id: clientId,
@@ -102,10 +87,27 @@ async function runAppsScriptFunction(env, functionName, parameters = []) {
     },
   );
 
-  const data = await response.json();
+  const responseText = await response.text();
+  let data;
+  try {
+    data = JSON.parse(responseText);
+  } catch {
+    throw new Error(
+      `Apps Script API returned invalid JSON (HTTP ${response.status}): ${responseText.slice(0, 1000)}`,
+    );
+  }
 
-  if (!response.ok) {
-    throw new Error(`Apps Script API failed: ${JSON.stringify(data)}`);
+  if (!response.ok || data.error) {
+    const apiError = data.error || data;
+    const executionError = apiError.details?.find(
+      (detail) => detail.errorMessage || detail.scriptStackTraceElements,
+    );
+    const details = executionError
+      ? `; execution=${JSON.stringify(executionError)}`
+      : "";
+    throw new Error(
+      `Apps Script API failed (HTTP ${response.status}): ${JSON.stringify(apiError)}${details}`,
+    );
   }
 
   return data;
@@ -120,15 +122,21 @@ async function inputSaleMasterData(env, saleData) {
       throw new Error("inputData must contain a non-empty sale array");
     }
 
-    const result = await runAppsScriptFunction(env, "inputSaleMasterData", [
+    const result = await runAppsScriptFunction(
+      env,
+      "inputSaleMasterData",
       saleData,
-    ]);
+    );
     return {
       status: true,
       message: "Apps Script executed successfully",
       result,
     };
   } catch (error) {
+    console.error(
+      "CREATE_SALE Apps Script error:",
+      error?.stack || error?.message || error,
+    );
     return {
       status: false,
       message: error?.message || "Apps Script execution failed",
@@ -137,8 +145,8 @@ async function inputSaleMasterData(env, saleData) {
 }
 
 async function exchangeGoogleCode(code, env) {
-  const clientId = await getGoogleClientId(env);
-  const clientSecret = await getGoogleClientSecret(env);
+  const clientId = await readSecret(env, "NATURES_CLIENT_ID");
+  const clientSecret = await readSecret(env, "NATURES_CLIENT_SECRET");
 
   const body = new URLSearchParams({
     code,
@@ -374,10 +382,11 @@ export default {
           response = await DELETE_DATA(inputData, env);
           break;
 
-        case "CREATE_SALE":
+        case "CREATE_SALE_NEW":
           response = await inputSaleMasterData(env, inputData);
           break;
 
+        case "CREATE_SALE":
         case "GET_STOCK":
         case "GET_ALL_USER_LIST":
         case "GET_PRODUCT_LIST":
