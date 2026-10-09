@@ -82,7 +82,7 @@ async function runAppsScriptFunction(env, functionName, parameters = []) {
       },
       body: JSON.stringify({
         function: functionName,
-        parameters,
+        parameters: [parameters],
       }),
     },
   );
@@ -261,7 +261,10 @@ export default {
     }
     if (request.method === "GET" && url.pathname === "/test-apps-script") {
       try {
-        const result = await runAppsScriptFunction(env, "updateNKDCreditBook");
+        const result = await runAppsScriptFunction(
+          env,
+          "TEST_EMAIL_PERMISSION",
+        );
 
         return new Response(
           JSON.stringify({
@@ -382,11 +385,11 @@ export default {
           response = await DELETE_DATA(inputData, env);
           break;
 
-        case "CREATE_SALE_NEW":
+        case "CREATE_SALE":
           response = await inputSaleMasterData(env, inputData);
           break;
 
-        case "CREATE_SALE":
+        case "CREATE_SALE_NEW":
         case "GET_STOCK":
         case "GET_ALL_USER_LIST":
         case "GET_PRODUCT_LIST":
