@@ -111,6 +111,31 @@ async function runAppsScriptFunction(env, functionName, parameters = []) {
   return data;
 }
 
+async function inputSaleMasterData(env, saleData) {
+  try {
+    if (typeof saleData === "string") {
+      saleData = JSON.parse(saleData);
+    }
+    if (!Array.isArray(saleData) || saleData.length === 0) {
+      throw new Error("inputData must contain a non-empty sale array");
+    }
+
+    const result = await runAppsScriptFunction(env, "inputSaleMasterData", [
+      saleData,
+    ]);
+    return {
+      status: true,
+      message: "Apps Script executed successfully",
+      result,
+    };
+  } catch (error) {
+    return {
+      status: false,
+      message: error?.message || "Apps Script execution failed",
+    };
+  }
+}
+
 async function exchangeGoogleCode(code, env) {
   const clientId = await getGoogleClientId(env);
   const clientSecret = await getGoogleClientSecret(env);
@@ -349,11 +374,14 @@ export default {
           response = await DELETE_DATA(inputData, env);
           break;
 
+        case "CREATE_SALE":
+          response = await inputSaleMasterData(env, inputData);
+          break;
+
         case "GET_STOCK":
         case "GET_ALL_USER_LIST":
         case "GET_PRODUCT_LIST":
         case "SAVE_PRODUCTION_DATA":
-        case "CREATE_SALE":
         case "UPDATE_STOCK_VIA_SALE":
         case "UPDATE_ACTIVITY_MASTER":
         case "INSERT_DAILY_INPUT":
