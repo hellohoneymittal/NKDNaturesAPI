@@ -472,3 +472,13 @@ export class StockUpdateCoordinator extends DurableObject {
     return Response.json(result);
   }
 }
+
+function TEST_EMAIL_PERMISSION() {
+  MailApp.sendEmail(
+    "hellohoneymittal@gmail.com",
+    "Test Email",
+    "Testing MailApp permission",
+  );
+
+  return "Email sent";
+}
